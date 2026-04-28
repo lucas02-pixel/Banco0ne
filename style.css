@@ -1,0 +1,216 @@
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --card: #1a1a28;
+  --border: #2a2a45;
+  --accent: #f0c040;
+  --accent2: #7b5cf0;
+  --green: #3dffa0;
+  --red: #ff5c6a;
+  --text: #e8e8f0;
+  --muted: #6060a0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(123,92,240,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(240,192,64,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.logo {
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent) 0%, #ff9f40 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+}
+
+.form-box {
+  background: var(--card);
+  padding: 30px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  width: 100%;
+}
+
+.form-box h3 {
+  font-size: 20px;
+  margin-bottom: 24px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.input-group {
+  margin-bottom: 16px;
+}
+
+input {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 18px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  transition: all 0.3s;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(240,192,64,0.1);
+}
+
+button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+#submit-btn {
+  background: var(--accent);
+  color: #0a0a0f;
+}
+
+#submit-btn:hover {
+  background: #f5cc55;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(240,192,64,0.2);
+}
+
+#toggle-mode {
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+  margin-top: 20px;
+  font-family: 'Space Mono', monospace;
+}
+
+#toggle-mode:hover {
+  color: var(--text);
+}
+
+#message {
+  margin-top: 20px;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  min-height: 20px;
+}
+
+#user-info {
+  background: linear-gradient(135deg, #1e1e35 0%, #23233d 100%);
+  border: 1px solid var(--border);
+  padding: 30px;
+  border-radius: 24px;
+  text-align: center;
+  display: none;
+  animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.welcome-text {
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.user-name {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.data-grid {
+  display: grid;
+  gap: 15px;
+  text-align: left;
+}
+
+.data-item {
+  background: rgba(255,255,255,0.03);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.data-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.data-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.data-value.gix {
+  color: var(--accent2);
+  font-family: 'Space Mono', monospace;
+}

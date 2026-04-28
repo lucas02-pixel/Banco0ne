@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sulegal - Acesso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">Sistema de Acesso</div>
+      <div class="title">Banco ONE</div>
+    </div>
+
+    <div class="form-box" id="form-box">
+      <h3 id="form-title">Entrar</h3>
+      <div class="input-group">
+        <input type="text" id="input-nome" placeholder="Nome de usuário" required />
+      </div>
+      <div class="input-group">
+        <input type="password" id="input-senha" placeholder="Sua senha" required />
+      </div>
+      <button id="submit-btn">Acessar Conta</button>
+      <button id="toggle-mode">Ainda não tenho conta</button>
+    </div>
+
+    <p id="message"></p>
+
+    <div id="user-info">
+      <div class="welcome-text">Bem-vindo de volta</div>
+      <div class="user-name" id="user-nome"></div>
+      
+      <div class="data-grid">
+        <div class="data-item">
+          <div class="data-label">Saldo Disponível</div>
+          <div class="data-value"><span id="user-saldo"></span> sulegais</div>
+        </div>
+        <div class="data-item">
+          <div class="data-label">Seu Código GIX</div>
+          <div class="data-value gix" id="user-gix"></div>
+        </div>
+      </div>
+
+      <button class="btn" style="background: var(--surface); color: var(--text); margin-top: 25px; border: 1px solid var(--border);" onclick="location.reload()">Sair com segurança</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
