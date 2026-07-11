@@ -8,24 +8,11 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
-
-  // Reutilize o "app" que você já inicializou com sua configuração do Firebase
-  const app = initializeApp(firebaseConfig);
-
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LcmYU4tAAAAAOFwL2zGX9VDOLRSOd0bfdzGyGgI'),
-    isTokenAutoRefreshEnabled: true
-  });
-</script>
   <div class="container">
     <div class="header">
       <div class="logo">Sistema de Acesso</div>
       <div class="title">Banco ONE</div>
     </div>
-
     <div class="form-box" id="form-box">
       <h3 id="form-title">Entrar</h3>
       <div class="input-group">
@@ -37,13 +24,11 @@
       <button id="submit-btn">Acessar Conta</button>
       <button id="toggle-mode">Ainda não tenho conta</button>
     </div>
-
     <p id="message"></p>
-
     <div id="user-info">
       <div class="welcome-text">Bem-vindo de volta</div>
       <div class="user-name" id="user-nome"></div>
-      
+
       <div class="data-grid">
         <div class="data-item">
           <div class="data-label">Saldo Disponível</div>
@@ -54,14 +39,14 @@
           <div class="data-value gix" id="user-gix"></div>
         </div>
       </div>
-
       <button class="btn" style="background: var(--surface); color: var(--text); margin-top: 25px; border: 1px solid var(--border);" onclick="location.reload()">Sair com segurança</button>
     </div>
   </div>
 
+  <!-- Firebase (versão compat, todas juntas, mesma versão) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-check-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <script src="script.js"></script>
-
 </body>
 </html>
