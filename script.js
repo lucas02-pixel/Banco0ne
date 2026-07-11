@@ -10,6 +10,14 @@ const firebaseConfig = {
 
 // Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Ativa o App Check (reCAPTCHA v3)
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  '6LcmYU4tAAAAAOFwL2zGX9VDOLRSOd0bfdzGyGgI',
+  true // isTokenAutoRefreshEnabled
+);
+
 const db = firebase.firestore();
 
 // Elementos da Interface
@@ -53,7 +61,6 @@ toggleModeBtn.addEventListener('click', () => {
 
 // Evento do botão de envio (Acessar / Cadastrar)
 submitBtn.addEventListener('click', async () => {
-  // O .trim() remove espaços em branco acidentais antes e depois do texto
   const nome = inputNome.value.trim();
   const senha = inputSenha.value.trim();
 
@@ -68,7 +75,6 @@ submitBtn.addEventListener('click', async () => {
   if (isLoginMode) {
     // --- MODO DE LOGIN ---
     try {
-      // Importante: No Firestore, os IDs dos documentos diferenciam maiúsculas de minúsculas (Ex: "Joao" é diferente de "joao")
       const docRef = db.collection('Contas').doc(nome);
       const doc = await docRef.get();
 
@@ -79,15 +85,13 @@ submitBtn.addEventListener('click', async () => {
       }
 
       const data = doc.data();
-      
-      // Validação estrita de senha
+
       if (data.senha !== senha) {
         mostrarMensagem('Credenciais incorretas.', 'var(--red)');
         resetBtn();
         return;
       }
 
-      // Sucesso no login
       mostrarMensagem('');
       mostrarUserInfo(nome, data.saldo, data.gix);
       formBox.style.display = 'none';
