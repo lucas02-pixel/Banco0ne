@@ -8,9 +8,11 @@ const firebaseConfig = {
   measurementId: "G-LTXPBFK5JV"
 };
 
+// Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Elementos da Interface
 const message = document.getElementById('message');
 const userInfo = document.getElementById('user-info');
 const userNomeSpan = document.getElementById('user-nome');
@@ -26,28 +28,32 @@ const formBox = document.getElementById('form-box');
 
 let isLoginMode = true;
 
+// Função para gerar o código GIX único
 function gerarGix() {
   return 'SUL' + Math.floor(100000 + Math.random() * 900000);
 }
 
+// Alterna entre os modos de Entrar e Criar Conta
 toggleModeBtn.addEventListener('click', () => {
   isLoginMode = !isLoginMode;
   if (isLoginMode) {
     formTitle.textContent = 'Entrar';
     submitBtn.textContent = 'Acessar Conta';
     toggleModeBtn.textContent = 'Ainda não tenho conta';
-    message.textContent = '';
+    mostrarMensagem('', '');
   } else {
     formTitle.textContent = 'Criar conta';
     submitBtn.textContent = 'Finalizar Cadastro';
     toggleModeBtn.textContent = 'Já sou cliente';
-    message.textContent = '';
+    mostrarMensagem('', '');
   }
   inputNome.value = '';
   inputSenha.value = '';
 });
 
+// Evento do botão de envio (Acessar / Cadastrar)
 submitBtn.addEventListener('click', async () => {
+  // O .trim() remove espaços em branco acidentais antes e depois do texto
   const nome = inputNome.value.trim();
   const senha = inputSenha.value.trim();
 
@@ -60,32 +66,39 @@ submitBtn.addEventListener('click', async () => {
   submitBtn.textContent = "Processando...";
 
   if (isLoginMode) {
+    // --- MODO DE LOGIN ---
     try {
+      // Importante: No Firestore, os IDs dos documentos diferenciam maiúsculas de minúsculas (Ex: "Joao" é diferente de "joao")
       const docRef = db.collection('Contas').doc(nome);
       const doc = await docRef.get();
 
       if (!doc.exists) {
-        mostrarMensagem('Usuário não localizado.', 'var(--red)');
+        mostrarMensagem('Usuário não localizado. Verifique o nome digitado.', 'var(--red)');
         resetBtn();
         return;
       }
 
       const data = doc.data();
+      
+      // Validação estrita de senha
       if (data.senha !== senha) {
         mostrarMensagem('Credenciais incorretas.', 'var(--red)');
         resetBtn();
         return;
       }
 
+      // Sucesso no login
       mostrarMensagem('');
       mostrarUserInfo(nome, data.saldo, data.gix);
       formBox.style.display = 'none';
 
     } catch (error) {
-      mostrarMensagem('Erro de conexão.', 'var(--red)');
+      console.error("Erro ao autenticar:", error);
+      mostrarMensagem('Erro de conexão com o servidor.', 'var(--red)');
       resetBtn();
     }
   } else {
+    // --- MODO DE CADASTRO ---
     try {
       const docRef = db.collection('Contas').doc(nome);
       const doc = await docRef.get();
@@ -108,22 +121,26 @@ submitBtn.addEventListener('click', async () => {
       formBox.style.display = 'none';
 
     } catch (error) {
-      mostrarMensagem('Erro ao criar conta.', 'var(--red)');
+      console.error("Erro ao criar conta:", error);
+      mostrarMensagem('Erro ao criar conta no servidor.', 'var(--red)');
       resetBtn();
     }
   }
 });
 
+// Reseta o estado do botão principal
 function resetBtn() {
   submitBtn.disabled = false;
   submitBtn.textContent = isLoginMode ? "Acessar Conta" : "Finalizar Cadastro";
 }
 
+// Exibe mensagens de feedback na tela
 function mostrarMensagem(texto, cor) {
   message.textContent = texto;
   message.style.color = cor;
 }
 
+// Altera a tela para exibir as informações do usuário logado
 function mostrarUserInfo(nome, saldo, gix) {
   userNomeSpan.textContent = nome;
   userSaldoSpan.textContent = saldo;
