@@ -1,17 +1,21 @@
 :root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --card: #1a1a28;
-  --border: #2a2a45;
-  --accent: #f0c040;
-  --accent2: #7b5cf0;
-  --green: #3dffa0;
-  --red: #ff5c6a;
-  --text: #e8e8f0;
-  --muted: #6060a0;
+  --bg: #08090a;            /* Preto profundo e profissional */
+  --surface: #111315;       /* Cinza muito escuro para contraste */
+  --card: #171a1d;          /* Tom de cinza corporativo e robusto */
+  --border: #23272c;        /* Bordas discretas e elegantes */
+  --accent: #10b981;        /* Verde esmeralda (confiança e segurança) */
+  --accent2: #059669;       /* Verde escuro para variações */
+  --green: #34d399;         /* Verde claro para feedbacks positivos */
+  --red: #ef4444;           /* Vermelho padrão para erros */
+  --text: #f3f4f6;          /* Branco leve para excelente leitura */
+  --muted: #6b7280;         /* Cinza neutro para textos secundários */
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+}
 
 body {
   background: var(--bg);
@@ -26,13 +30,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Fundo sutil para manter o aspecto moderno sem perder a sobriedade */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(123,92,240,0.12) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(240,192,64,0.08) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(5, 150, 105, 0.03) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -61,7 +66,7 @@ body::before {
 .title {
   font-size: 38px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--accent) 0%, #ff9f40 100%);
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -73,7 +78,7 @@ body::before {
   padding: 30px;
   border-radius: 24px;
   border: 1px solid var(--border);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
   width: 100%;
 }
 
@@ -106,7 +111,7 @@ input {
 
 input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(240,192,64,0.1);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
 button {
@@ -124,13 +129,13 @@ button {
 
 #submit-btn {
   background: var(--accent);
-  color: #0a0a0f;
+  color: #08090a;
 }
 
 #submit-btn:hover {
-  background: #f5cc55;
+  background: #10c78b;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(240,192,64,0.2);
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
 }
 
 #toggle-mode {
@@ -155,7 +160,7 @@ button {
 }
 
 #user-info {
-  background: linear-gradient(135deg, #1e1e35 0%, #23233d 100%);
+  background: linear-gradient(135deg, #121518 0%, #171b1f 100%);
   border: 1px solid var(--border);
   padding: 30px;
   border-radius: 24px;
@@ -191,7 +196,7 @@ button {
 }
 
 .data-item {
-  background: rgba(255,255,255,0.03);
+  background: rgba(255,255,255,0.02);
   padding: 15px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -211,6 +216,6 @@ button {
 }
 
 .data-value.gix {
-  color: var(--accent2);
+  color: var(--muted);
   font-family: 'Space Mono', monospace;
 }
