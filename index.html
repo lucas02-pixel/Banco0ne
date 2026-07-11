@@ -8,7 +8,18 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js";
 
+  // Reutilize o "app" que você já inicializou com sua configuração do Firebase
+  const app = initializeApp(firebaseConfig);
+
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LcmYU4tAAAAAOFwL2zGX9VDOLRSOd0bfdzGyGgI'),
+    isTokenAutoRefreshEnabled: true
+  });
+</script>
   <div class="container">
     <div class="header">
       <div class="logo">Sistema de Acesso</div>
