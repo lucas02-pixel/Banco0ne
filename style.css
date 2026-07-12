@@ -1,14 +1,14 @@
 :root {
-  --bg: #08090a;            /* Preto profundo e profissional */
-  --surface: #111315;       /* Cinza muito escuro para contraste */
-  --card: #171a1d;          /* Tom de cinza corporativo e robusto */
-  --border: #23272c;        /* Bordas discretas e elegantes */
-  --accent: #10b981;        /* Verde esmeralda (confiança e segurança) */
-  --accent2: #059669;       /* Verde escuro para variações */
-  --green: #34d399;         /* Verde claro para feedbacks positivos */
-  --red: #ef4444;           /* Vermelho padrão para erros */
-  --text: #f3f4f6;          /* Branco leve para excelente leitura */
-  --muted: #6b7280;         /* Cinza neutro para textos secundários */
+  --bg: #060708;            /* Preto absoluto para fundo */
+  --surface: #0f1115;       /* Cinza escuro para campos de entrada */
+  --card: #15181e;          /* Cinza corporativo para o painel principal */
+  --border: #22272f;        /* Linhas divisórias sutis */
+  --accent: #00e676;        /* Verde vivo e enérgico (Alta tecnologia/Confiança) */
+  --accent-hover: #00c853;  /* Verde ligeiramente mais escuro para o efeito hover */
+  --green-light: #b9f6ca;   /* Verde claro para contrastes de texto */
+  --red: #ff5252;           /* Vermelho vibrante para erros */
+  --text: #ffffff;          /* Branco puro para leitura perfeita */
+  --muted: #78909c;         /* Cinza azulado para textos secundários */
 }
 
 * { 
@@ -30,14 +30,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Fundo sutil para manter o aspecto moderno sem perder a sobriedade */
+/* Iluminação de fundo sutil em verde para dar profundidade sem poluir */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(5, 150, 105, 0.03) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 40% at 50% 20%, rgba(0, 230, 118, 0.03) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -64,140 +63,156 @@ body::before {
 }
 
 .title {
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.1;
+  letter-spacing: -1px;
 }
 
 .form-box {
   background: var(--card);
-  padding: 30px;
-  border-radius: 24px;
+  padding: 35px 30px;
+  border-radius: 20px;
   border: 1px solid var(--border);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   width: 100%;
 }
 
 .form-box h3 {
-  font-size: 20px;
-  margin-bottom: 24px;
+  font-size: 18px;
+  margin-bottom: 28px;
   color: var(--text);
   font-family: 'Space Mono', monospace;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   text-align: center;
 }
 
 .input-group {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 input {
   width: 100%;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 18px;
+  border-radius: 12px;
+  padding: 16px 18px;
   color: var(--text);
   font-family: 'Space Mono', monospace;
   font-size: 15px;
-  transition: all 0.3s;
+  transition: all 0.25s ease;
   outline: none;
 }
 
 input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  background: #13161c;
+  box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.1);
 }
 
+/* --- BOTÕES REESTRUTURADOS --- */
 button {
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-family: 'Syne', sans-serif;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-top: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Botão Principal (Acessar Conta) */
 #submit-btn {
   background: var(--accent);
-  color: #08090a;
+  color: #020304;
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.2);
 }
 
-#submit-btn:hover {
-  background: #10c78b;
+#submit-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.35);
 }
 
+#submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+#submit-btn:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Botão de Alternância (Criar Conta / Já sou cliente) */
 #toggle-mode {
   background: transparent;
   color: var(--muted);
   font-size: 13px;
   text-decoration: none;
-  margin-top: 20px;
+  margin-top: 22px;
   font-family: 'Space Mono', monospace;
+  border: 1px solid transparent;
 }
 
 #toggle-mode:hover {
-  color: var(--text);
+  color: var(--accent);
+  background: rgba(0, 230, 118, 0.05);
+  border-color: rgba(0, 230, 118, 0.15);
 }
 
-#message {
-  margin-top: 20px;
-  text-align: center;
-  font-family: 'Space Mono', monospace;
-  font-size: 13px;
-  min-height: 20px;
-}
-
+/* Painel de Informações do Usuário (Pós-Login) */
 #user-info {
-  background: linear-gradient(135deg, #121518 0%, #171b1f 100%);
+  background: linear-gradient(135deg, #0e1116 0%, #151921 100%);
   border: 1px solid var(--border);
-  padding: 30px;
-  border-radius: 24px;
+  padding: 35px 30px;
+  border-radius: 20px;
   text-align: center;
   display: none;
-  animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes popIn {
-  from { transform: scale(0.9); opacity: 0; }
+  from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 
 .welcome-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-bottom: 10px;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
 }
 
 .user-name {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--text);
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .data-grid {
   display: grid;
-  gap: 15px;
+  gap: 16px;
   text-align: left;
 }
 
 .data-item {
-  background: rgba(255,255,255,0.02);
-  padding: 15px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 18px;
   border-radius: 12px;
   border: 1px solid var(--border);
 }
@@ -207,15 +222,27 @@ button {
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
 }
 
 .data-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--accent);
 }
 
 .data-value.gix {
-  color: var(--muted);
+  color: #ffffff;
   font-family: 'Space Mono', monospace;
+  font-size: 18px;
+}
+
+#message {
+  margin-top: 20px;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  min-height: 20px;
+  font-weight: 700;
 }
