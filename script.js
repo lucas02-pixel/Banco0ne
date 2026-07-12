@@ -35,10 +35,21 @@ const toggleModeBtn = document.getElementById('toggle-mode');
 const formBox = document.getElementById('form-box');
 
 let isLoginMode = true;
+let unsubscribeSaldo = null; // referência do listener em tempo real, para poder desligar depois
 
 // Função para gerar o código GIX único
 function gerarGix() {
   return 'SUL' + Math.floor(100000 + Math.random() * 900000);
+}
+
+// Converte o valor de saldo vindo do Firestore em número, não importa o formato salvo
+function formatarSaldo(valor) {
+  const numero = Number(valor);
+  if (isNaN(numero)) {
+    console.warn('Saldo veio em formato inesperado do Firestore:', valor);
+    return 0;
+  }
+  return numero;
 }
 
 // Alterna entre os modos de Entrar e Criar Conta
@@ -85,6 +96,7 @@ submitBtn.addEventListener('click', async () => {
       }
 
       const data = doc.data();
+      console.log('Documento recebido do Firestore:', data); // ajuda a conferir o que está salvo
 
       if (data.senha !== senha) {
         mostrarMensagem('Credenciais incorretas.', 'var(--red)');
@@ -94,6 +106,7 @@ submitBtn.addEventListener('click', async () => {
 
       mostrarMensagem('');
       mostrarUserInfo(nome, data.saldo, data.gix);
+      escutarSaldoEmTempoReal(nome); // passa a acompanhar mudanças de saldo ao vivo
       formBox.style.display = 'none';
 
     } catch (error) {
@@ -122,6 +135,7 @@ submitBtn.addEventListener('click', async () => {
 
       mostrarMensagem('');
       mostrarUserInfo(nome, 0, gix);
+      escutarSaldoEmTempoReal(nome);
       formBox.style.display = 'none';
 
     } catch (error) {
@@ -131,6 +145,23 @@ submitBtn.addEventListener('click', async () => {
     }
   }
 });
+
+// Escuta o documento do usuário em tempo real, para o saldo sempre refletir o valor
+// atual do Firestore (mesmo que ele mude depois do login, por um painel admin, etc.)
+function escutarSaldoEmTempoReal(nome) {
+  if (unsubscribeSaldo) {
+    unsubscribeSaldo(); // desliga um listener anterior, se existir
+  }
+
+  unsubscribeSaldo = db.collection('Contas').doc(nome).onSnapshot((doc) => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    console.log('Atualização de saldo recebida:', data.saldo);
+    userSaldoSpan.textContent = formatarSaldo(data.saldo);
+  }, (error) => {
+    console.error('Erro ao escutar saldo em tempo real:', error);
+  });
+}
 
 // Reseta o estado do botão principal
 function resetBtn() {
@@ -147,7 +178,7 @@ function mostrarMensagem(texto, cor) {
 // Altera a tela para exibir as informações do usuário logado
 function mostrarUserInfo(nome, saldo, gix) {
   userNomeSpan.textContent = nome;
-  userSaldoSpan.textContent = saldo;
+  userSaldoSpan.textContent = formatarSaldo(saldo);
   userGixSpan.textContent = gix;
   userInfo.style.display = 'block';
 }
