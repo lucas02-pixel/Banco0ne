@@ -52,6 +52,12 @@ function formatarSaldo(valor) {
   return numero;
 }
 
+// Deixa a primeira letra maiúscula e o restante do jeito que veio
+function comPrimeiraLetraMaiuscula(nome) {
+  if (!nome) return nome;
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
 // Alterna entre os modos de Entrar e Criar Conta
 toggleModeBtn.addEventListener('click', () => {
   isLoginMode = !isLoginMode;
@@ -86,8 +92,24 @@ submitBtn.addEventListener('click', async () => {
   if (isLoginMode) {
     // --- MODO DE LOGIN ---
     try {
-      const docRef = db.collection('Contas').doc(nome);
-      const doc = await docRef.get();
+      let nomeFinal = nome;
+      let docRef = db.collection('Contas').doc(nomeFinal);
+      let doc = await docRef.get();
+
+      // Se não achou com o nome exatamente como foi digitado,
+      // tenta de novo com a primeira letra maiúscula
+      if (!doc.exists) {
+        const nomeAlternativo = comPrimeiraLetraMaiuscula(nome);
+        if (nomeAlternativo !== nome) {
+          const docRefAlt = db.collection('Contas').doc(nomeAlternativo);
+          const docAlt = await docRefAlt.get();
+          if (docAlt.exists) {
+            nomeFinal = nomeAlternativo;
+            docRef = docRefAlt;
+            doc = docAlt;
+          }
+        }
+      }
 
       if (!doc.exists) {
         mostrarMensagem('Usuário não localizado. Verifique o nome digitado.', 'var(--red)');
@@ -105,8 +127,8 @@ submitBtn.addEventListener('click', async () => {
       }
 
       mostrarMensagem('');
-      mostrarUserInfo(nome, data.saldo, data.gix);
-      escutarSaldoEmTempoReal(nome); // passa a acompanhar mudanças de saldo ao vivo
+      mostrarUserInfo(nomeFinal, data.saldo, data.gix);
+      escutarSaldoEmTempoReal(nomeFinal); // passa a acompanhar mudanças de saldo ao vivo
       formBox.style.display = 'none';
 
     } catch (error) {
