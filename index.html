@@ -3,50 +3,147 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sulegal - Acesso</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <title>Banco One - Sulegais</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
+
     <div class="header">
-      <div class="logo">BEM VINDO</div>
+      <div class="logo">BANCO ONE</div>
       <div class="title">banco 0NE</div>
     </div>
-    <div class="form-box" id="form-box">
-      <h3 id="form-title">Entrar</h3>
-      <div class="input-group">
-        <input type="text" id="input-nome" placeholder="Nome de usuário" required />
-      </div>
-      <div class="input-group">
-        <input type="password" id="input-senha" placeholder="Sua senha" required />
-      </div>
-      <button id="submit-btn">Acessar Conta</button>
-      <button id="toggle-mode">Ainda não tenho conta</button>
-    </div>
-    <p id="message"></p>
-    <div id="user-info">
-      <div class="welcome-text">Bem-vindo de volta</div>
-      <div class="user-name" id="user-nome"></div>
 
-      <div class="data-grid">
-        <div class="data-item">
-          <div class="data-label">Saldo Disponível</div>
-          <div class="data-value"><span id="user-saldo"></span> sulegais</div>
+    <!-- Indicador de passos, só aparece durante o fluxo de transferência -->
+    <div class="steps-dots" id="stepsDots">
+      <div class="dot" data-step="recipient"></div>
+      <div class="dot" data-step="amount"></div>
+      <div class="dot" data-step="confirm"></div>
+      <div class="dot" data-step="receipt"></div>
+    </div>
+
+    <!-- STEP: LOGIN / CADASTRO -->
+    <div class="step active" id="step-login">
+      <div class="form-box">
+        <h3 id="form-title">Entrar</h3>
+        <div class="input-group">
+          <input type="text" id="input-nome" placeholder="Nome de usuário" required />
         </div>
-        <div class="data-item">
-          <div class="data-label">Seu Código GIX</div>
-          <div class="data-value gix" id="user-gix"></div>
+        <div class="input-group">
+          <input type="password" id="input-senha" placeholder="Sua senha" required />
+        </div>
+        <div class="error-msg" id="loginError"></div>
+        <button id="submit-btn" class="btn-accent">Acessar Conta</button>
+        <button id="toggle-mode" class="btn-ghost">Ainda não tenho conta</button>
+      </div>
+    </div>
+
+    <!-- STEP: DASHBOARD (conta logada) -->
+    <div class="step" id="step-dashboard">
+      <div class="glass-card">
+        <div class="welcome-text">Bem-vindo de volta</div>
+        <div class="user-name" id="user-nome"></div>
+
+        <div class="data-grid">
+          <div class="data-item">
+            <div class="data-label">Saldo Disponível</div>
+            <div class="data-value"><span id="user-saldo"></span> sulegais</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Seu Código GIX</div>
+            <div class="data-value gix" id="user-gix"></div>
+          </div>
+        </div>
+
+        <button id="gixBtn" class="btn-accent">Fazer um GIX →</button>
+        <button id="logoutBtn" class="btn-ghost">Sair com segurança</button>
+      </div>
+    </div>
+
+    <!-- STEP: DESTINATÁRIO -->
+    <div class="step" id="step-recipient">
+      <div class="glass-card">
+        <div class="card-label">// Transferir para</div>
+        <div class="input-group">
+          <input type="text" id="toGix" placeholder="GIX do destinatário (ex: SUL123456)" />
+        </div>
+        <div class="error-msg" id="recipientError"></div>
+        <button class="btn-accent" id="findRecipientBtn">Buscar conta →</button>
+        <button class="btn-ghost" id="backToDashboardBtn">Voltar</button>
+      </div>
+    </div>
+
+    <!-- STEP: VALOR -->
+    <div class="step" id="step-amount">
+      <div class="recipient-preview">
+        <div class="recipient-avatar" id="recipientAvatar">?</div>
+        <div>
+          <div id="recipientName" class="recipient-name">—</div>
+          <div id="recipientGixDisplay" class="recipient-gix">GIX: —</div>
         </div>
       </div>
-      <button class="btn" style="background: var(--surface); color: var(--text); margin-top: 25px; border: 1px solid var(--border);" onclick="location.reload()">Sair com segurança</button>
+      <div class="glass-card">
+        <div class="card-label">// Quanto enviar?</div>
+        <div class="input-group">
+          <input type="number" id="amount" min="1" placeholder="0" />
+        </div>
+        <div class="error-msg" id="amountError"></div>
+        <button class="btn-accent" id="reviewBtn">Revisar envio →</button>
+        <button class="btn-ghost" id="backToRecipientBtn">Voltar</button>
+      </div>
     </div>
+
+    <!-- STEP: CONFIRMAR -->
+    <div class="step" id="step-confirm">
+      <div class="glass-card">
+        <div class="card-label">// Confirmar</div>
+        <div class="confirm-row"><span class="confirm-key">Para</span><span id="confirmTo" class="confirm-val">—</span></div>
+        <div class="confirm-row"><span class="confirm-key">GIX</span><span id="confirmGix" class="confirm-val muted-mono">—</span></div>
+        <div class="confirm-row"><span class="confirm-key">Valor</span><span id="confirmAmount" class="confirm-val accent-text">—</span></div>
+        <div class="confirm-row"><span class="confirm-key">Novo Saldo</span><span id="confirmAfter" class="confirm-val green-text">—</span></div>
+      </div>
+      <div class="error-msg" id="transferError"></div>
+      <button class="btn-accent" id="confirmBtn">✓ Confirmar e enviar</button>
+      <button class="btn-ghost" id="backToAmountBtn">Voltar</button>
+    </div>
+
+    <!-- STEP: COMPROVANTE -->
+    <div class="step" id="step-receipt">
+      <div id="receiptCard" class="receipt-card">
+        <div class="receipt-header">
+          <span class="receipt-logo">BANCO ONE</span>
+          <span class="receipt-check">✓</span>
+        </div>
+        <div class="receipt-title">Comprovante de Transferência</div>
+
+        <div class="receipt-row"><span>Data</span><span id="receiptDate">—</span></div>
+        <div class="receipt-row"><span>De</span><span id="receiptFrom">—</span></div>
+        <div class="receipt-row"><span>Para</span><span id="receiptTo">—</span></div>
+        <div class="receipt-row"><span>GIX Destino</span><span id="receiptGix">—</span></div>
+        <div class="receipt-row receipt-highlight"><span>Valor Enviado</span><span id="receiptAmount">—</span></div>
+        <div class="receipt-row"><span>ID da Transação</span><span id="receiptId">—</span></div>
+
+        <div class="receipt-footer">Banco One • Sulegais Global</div>
+      </div>
+
+      <div class="receipt-actions">
+        <button class="btn-accent" id="downloadImgBtn">Baixar como Imagem</button>
+        <button class="btn-secondary-accent" id="downloadPdfBtn">Baixar como PDF</button>
+        <button class="btn-ghost" id="newTransferBtn">Fazer outra transferência</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Firebase (versão compat, todas juntas, mesma versão) -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-check-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <!-- Exportação de comprovante -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script src="script.js"></script>
 </body>
 </html>
