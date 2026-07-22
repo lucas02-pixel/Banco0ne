@@ -92,6 +92,27 @@ function comPrimeiraLetraMaiuscula(nome) {
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 
+// ============================================================
+// HASH DE SENHA (Web Crypto API — SHA-256 com salt = nome da conta)
+// ============================================================
+// Um hash de verdade (SHA-256) é sempre uma string hexadecimal de 64
+// caracteres. Uma senha em texto puro dificilmente vai ter esse formato
+// exato, então usamos isso para diferenciar contas antigas de contas
+// já migradas, sem precisar de nenhum campo extra no banco.
+function pareceHash(valor) {
+  return typeof valor === 'string' && /^[a-f0-9]{64}$/i.test(valor);
+}
+
+async function gerarHashSenha(nome, senha) {
+  const textoComSal = nome.toLowerCase() + ':' + senha; // salt simples = nome da conta
+  const encoder = new TextEncoder();
+  const dados = encoder.encode(textoComSal);
+  const bufferHash = await crypto.subtle.digest('SHA-256', dados);
+  return Array.from(new Uint8Array(bufferHash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function showStep(id, dotIndex = null) {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -183,10 +204,28 @@ submitBtn.addEventListener('click', async () => {
       }
 
       const data = doc.data();
-      if (data.senha !== senha) {
-        showError('loginError', 'Credenciais incorretas.');
-        resetLoginBtn();
-        return;
+
+      if (pareceHash(data.senha)) {
+        // Conta já migrada: gera o hash da senha digitada e compara os hashes
+        const hashDigitado = await gerarHashSenha(nomeFinal, senha);
+        if (hashDigitado !== data.senha) {
+          showError('loginError', 'Credenciais incorretas.');
+          resetLoginBtn();
+          return;
+        }
+      } else {
+        // Conta antiga: senha ainda em texto puro
+        if (data.senha !== senha) {
+          showError('loginError', 'Credenciais incorretas.');
+          resetLoginBtn();
+          return;
+        }
+        // Login OK — aproveita e migra a senha pra hash, sem o usuário perceber
+        const novoHash = await gerarHashSenha(nomeFinal, senha);
+        docRef.update({ senha: novoHash }).catch(err =>
+          console.warn('Não foi possível migrar a senha para hash:', err)
+        );
+        data.senha = novoHash; // mantém o objeto local coerente
       }
 
       entrarNaConta(nomeFinal, data);
@@ -208,7 +247,8 @@ submitBtn.addEventListener('click', async () => {
       }
 
       const gix = gerarGix();
-      const novaConta = { senha: senha, saldo: 0, gix: gix };
+      const hashSenha = await gerarHashSenha(nome, senha);
+      const novaConta = { senha: hashSenha, saldo: 0, gix: gix };
       await docRef.set(novaConta);
 
       entrarNaConta(nome, novaConta);
