@@ -1,26 +1,28 @@
 :root {
-  --bg: #060708;            /* Preto absoluto para fundo */
-  --surface: #0f1115;       /* Cinza escuro para campos de entrada */
-  --card: #15181e;          /* Cinza corporativo para o painel principal */
-  --border: #22272f;        /* Linhas divisórias sutis */
-  --accent: #00e676;        /* Verde vivo e enérgico (Alta tecnologia/Confiança) */
-  --accent-hover: #00c853;  /* Verde ligeiramente mais escuro para o efeito hover */
-  --green-light: #b9f6ca;   /* Verde claro para contrastes de texto */
-  --red: #ff5252;           /* Vermelho vibrante para erros */
-  --text: #ffffff;          /* Branco puro para leitura perfeita */
-  --muted: #78909c;         /* Cinza azulado para textos secundários */
+  --bg: #060814;              /* Mesmo azul-preto profundo da landing */
+  --bg-deep: #02040a;         /* Preto mais fechado, usado em seções escuras da landing */
+  --surface: #0b1120;         /* Fundo dos inputs */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --accent: #00ff88;          /* Verde neon (cor principal da landing) */
+  --accent-alt: #6366f1;      /* Indigo (cor secundária da landing) */
+  --accent-alt-hover: #4f46e5;
+  --text: #ffffff;
+  --muted: #64748b;
+  --muted-light: #94a3b8;
+  --red: #ff5252;
 }
 
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
-  font-family: 'Syne', sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -28,15 +30,17 @@ body {
   justify-content: center;
   padding: 20px;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Iluminação de fundo sutil em verde para dar profundidade sem poluir */
+/* Glow radial sutil, mesmo recurso usado nos slides da landing (bg-1, bg-2...) */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 40% at 50% 20%, rgba(0, 230, 118, 0.03) 0%, transparent 70%);
+    radial-gradient(circle at 50% 20%, rgba(0, 255, 136, 0.06) 0%, transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -48,139 +52,137 @@ body::before {
   max-width: 400px;
 }
 
+/* --- Header --- */
 .header {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 32px;
 }
 
 .logo {
-  font-size: 11px;
-  letter-spacing: 4px;
+  font-size: 12px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--muted);
-  font-family: 'Space Mono', monospace;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .title {
   font-size: 40px;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+  background: linear-gradient(45deg, #ffffff, var(--accent));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.1;
-  letter-spacing: -1px;
 }
 
-.form-box {
-  background: var(--card);
-  padding: 35px 30px;
-  border-radius: 20px;
+/* --- Glass card (mesmo estilo de .glass-card da landing) --- */
+.form-box,
+#user-info {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  border-radius: 24px;
+  padding: 36px 30px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   width: 100%;
 }
 
 .form-box h3 {
-  font-size: 18px;
-  margin-bottom: 28px;
-  color: var(--text);
-  font-family: 'Space Mono', monospace;
-  text-transform: uppercase;
-  letter-spacing: 3px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 26px;
   text-align: center;
+  color: var(--text);
 }
 
 .input-group {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 input {
   width: 100%;
   background: var(--surface);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px 18px;
   color: var(--text);
-  font-family: 'Space Mono', monospace;
   font-size: 15px;
   transition: all 0.25s ease;
   outline: none;
 }
 
-input:focus {
-  border-color: var(--accent);
-  background: #13161c;
-  box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.1);
+input::placeholder {
+  color: var(--muted);
 }
 
-/* --- BOTÕES REESTRUTURADOS --- */
+input:focus {
+  border-color: var(--accent);
+  background: #0d1424;
+  box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.1);
+}
+
+/* --- Botões --- */
 button {
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: 12px;
-  font-family: 'Syne', sans-serif;
+  border-radius: 50px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Botão Principal (Acessar Conta) */
+/* Botão principal, no mesmo estilo do .cta-btn da landing */
 #submit-btn {
   background: var(--accent);
   color: #020304;
-  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.2);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.35);
 }
 
 #submit-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.35);
+  transform: scale(1.03) translateY(-2px);
+  background: #ffffff;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
 }
 
 #submit-btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(1) translateY(0);
 }
 
 #submit-btn:disabled {
   background: var(--border);
   color: var(--muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* Botão de Alternância (Criar Conta / Já sou cliente) */
+/* Botão de alternância — discreto, no estilo dos links/quest secundários da landing */
 #toggle-mode {
   background: transparent;
   color: var(--muted);
   font-size: 13px;
-  text-decoration: none;
-  margin-top: 22px;
-  font-family: 'Space Mono', monospace;
+  margin-top: 18px;
+  border-radius: 8px;
   border: 1px solid transparent;
 }
 
 #toggle-mode:hover {
   color: var(--accent);
-  background: rgba(0, 230, 118, 0.05);
-  border-color: rgba(0, 230, 118, 0.15);
+  background: rgba(0, 255, 136, 0.05);
+  border-color: rgba(0, 255, 136, 0.15);
 }
 
-/* Painel de Informações do Usuário (Pós-Login) */
+/* --- Painel pós-login --- */
 #user-info {
-  background: linear-gradient(135deg, #0e1116 0%, #151921 100%);
-  border: 1px solid var(--border);
-  padding: 35px 30px;
-  border-radius: 20px;
   text-align: center;
   display: none;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
   animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -200,25 +202,28 @@ button {
 .user-name {
   font-size: 30px;
   font-weight: 800;
-  color: var(--text);
-  margin-bottom: 28px;
+  background: linear-gradient(45deg, #ffffff, var(--accent-alt));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 26px;
 }
 
+/* Itens de dados, no mesmo estilo dos .quest-item da landing */
 .data-grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   text-align: left;
 }
 
 .data-item {
   background: rgba(255, 255, 255, 0.02);
-  padding: 18px;
+  padding: 16px 18px;
   border-radius: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-soft);
 }
 
 .data-label {
-  font-family: 'Space Mono', monospace;
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
@@ -234,14 +239,15 @@ button {
 
 .data-value.gix {
   color: #ffffff;
-  font-family: 'Space Mono', monospace;
   font-size: 18px;
 }
+
+/* Botão "Sair com segurança" usa var(--surface)/var(--text)/var(--border) inline no HTML,
+   então essas variáveis já ficam com os tons certos automaticamente. */
 
 #message {
   margin-top: 20px;
   text-align: center;
-  font-family: 'Space Mono', monospace;
   font-size: 13px;
   min-height: 20px;
   font-weight: 700;
