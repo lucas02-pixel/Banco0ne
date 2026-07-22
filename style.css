@@ -1,11 +1,10 @@
 :root {
-  --bg: #060814;              /* Mesmo azul-preto profundo da landing */
-  --bg-deep: #02040a;         /* Preto mais fechado, usado em seções escuras da landing */
-  --surface: #0b1120;         /* Fundo dos inputs */
+  --bg: #060814;
+  --surface: #0b1120;
   --border: rgba(255, 255, 255, 0.08);
   --border-soft: rgba(255, 255, 255, 0.05);
-  --accent: #00ff88;          /* Verde neon (cor principal da landing) */
-  --accent-alt: #6366f1;      /* Indigo (cor secundária da landing) */
+  --accent: #00ff88;          /* Verde neon principal */
+  --accent-alt: #6366f1;      /* Indigo secundário */
   --accent-alt-hover: #4f46e5;
   --text: #ffffff;
   --muted: #64748b;
@@ -28,12 +27,11 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px 16px;
   overflow-x: hidden;
   position: relative;
 }
 
-/* Glow radial sutil, mesmo recurso usado nos slides da landing (bg-1, bg-2...) */
 body::before {
   content: '';
   position: fixed;
@@ -49,13 +47,13 @@ body::before {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
 }
 
 /* --- Header --- */
 .header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .logo {
@@ -76,47 +74,78 @@ body::before {
   line-height: 1.1;
 }
 
-/* --- Glass card (mesmo estilo de .glass-card da landing) --- */
+/* --- Passos --- */
+.step { display: none; animation: fadeUp 0.35s ease forwards; }
+.step.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.steps-dots {
+  display: none;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.steps-dots.visible { display: flex; }
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: 0.3s;
+}
+.dot.active { background: var(--accent); width: 22px; border-radius: 3px; }
+.dot.done { background: var(--accent-alt); }
+
+/* --- Glass card (linguagem visual da landing) --- */
+.glass-card,
 .form-box,
-#user-info {
+.receipt-card {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: 24px;
-  padding: 36px 30px;
+  padding: 32px 28px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   width: 100%;
+  margin-bottom: 16px;
 }
 
 .form-box h3 {
   font-size: 20px;
   font-weight: 700;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
   text-align: center;
-  color: var(--text);
 }
 
-.input-group {
-  margin-bottom: 16px;
+.card-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 18px;
 }
+
+/* --- Inputs --- */
+.input-group { margin-bottom: 16px; }
 
 input {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px 18px;
+  padding: 15px 18px;
   color: var(--text);
   font-size: 15px;
-  transition: all 0.25s ease;
   outline: none;
+  transition: all 0.25s ease;
 }
-
-input::placeholder {
-  color: var(--muted);
-}
-
+input::placeholder { color: var(--muted); }
 input:focus {
   border-color: var(--accent);
   background: #0d1424;
@@ -126,82 +155,84 @@ input:focus {
 /* --- Botões --- */
 button {
   width: 100%;
-  padding: 16px;
+  padding: 15px;
   border: none;
   border-radius: 50px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Botão principal, no mesmo estilo do .cta-btn da landing */
-#submit-btn {
+.btn-accent {
   background: var(--accent);
   color: #020304;
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.35);
 }
-
-#submit-btn:hover:not(:disabled) {
-  transform: scale(1.03) translateY(-2px);
+.btn-accent:hover:not(:disabled) {
+  transform: scale(1.02) translateY(-2px);
   background: #ffffff;
   box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
 }
-
-#submit-btn:active:not(:disabled) {
-  transform: scale(1) translateY(0);
-}
-
-#submit-btn:disabled {
+.btn-accent:disabled {
   background: var(--border);
   color: var(--muted);
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
-/* Botão de alternância — discreto, no estilo dos links/quest secundários da landing */
-#toggle-mode {
+.btn-secondary-accent {
+  background: transparent;
+  color: var(--accent-alt);
+  border: 1.5px solid rgba(99, 102, 241, 0.4);
+}
+.btn-secondary-accent:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--accent-alt);
+}
+
+.btn-ghost {
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
-  margin-top: 18px;
-  border-radius: 8px;
   border: 1px solid transparent;
 }
-
-#toggle-mode:hover {
+.btn-ghost:hover {
   color: var(--accent);
   background: rgba(0, 255, 136, 0.05);
   border-color: rgba(0, 255, 136, 0.15);
 }
 
-/* --- Painel pós-login --- */
-#user-info {
-  text-align: center;
+/* --- Erros --- */
+.error-msg {
+  background: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--red);
+  margin-bottom: 14px;
   display: none;
-  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+.error-msg.show { display: block; }
 
-@keyframes popIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
+/* --- Dashboard --- */
 .welcome-text {
   font-size: 13px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 3px;
   margin-bottom: 8px;
+  text-align: center;
 }
-
 .user-name {
   font-size: 30px;
   font-weight: 800;
+  text-align: center;
   background: linear-gradient(45deg, #ffffff, var(--accent-alt));
   background-clip: text;
   -webkit-background-clip: text;
@@ -209,20 +240,13 @@ button {
   margin-bottom: 26px;
 }
 
-/* Itens de dados, no mesmo estilo dos .quest-item da landing */
-.data-grid {
-  display: grid;
-  gap: 14px;
-  text-align: left;
-}
-
+.data-grid { display: grid; gap: 14px; text-align: left; margin-bottom: 8px; }
 .data-item {
   background: rgba(255, 255, 255, 0.02);
   padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid var(--border-soft);
 }
-
 .data-label {
   font-size: 10px;
   color: var(--muted);
@@ -230,25 +254,102 @@ button {
   letter-spacing: 1px;
   margin-bottom: 4px;
 }
+.data-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+.data-value.gix { color: #ffffff; font-size: 18px; }
 
-.data-value {
-  font-size: 22px;
-  font-weight: 700;
+/* --- Preview do destinatário --- */
+.recipient-preview {
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.recipient-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+.recipient-name { font-weight: 700; }
+.recipient-gix { font-size: 12px; color: var(--muted); }
+
+/* --- Confirmação --- */
+.confirm-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.confirm-row:last-child { border-bottom: none; }
+.confirm-key { font-size: 12px; color: var(--muted); }
+.confirm-val { font-size: 15px; font-weight: 700; }
+.muted-mono { color: var(--muted); font-size: 13px; font-weight: 500; }
+.accent-text { color: var(--accent); }
+.green-text { color: var(--accent-alt); }
+
+/* --- Comprovante --- */
+.receipt-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+}
+.receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.receipt-logo {
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 14px;
   color: var(--accent);
 }
-
-.data-value.gix {
-  color: #ffffff;
+.receipt-check {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.15);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.receipt-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 13px;
+}
+.receipt-row span:first-child { color: var(--muted); }
+.receipt-row span:last-child { font-weight: 700; text-align: right; word-break: break-word; }
+.receipt-row.receipt-highlight span:last-child {
+  color: var(--accent);
   font-size: 18px;
 }
-
-/* Botão "Sair com segurança" usa var(--surface)/var(--text)/var(--border) inline no HTML,
-   então essas variáveis já ficam com os tons certos automaticamente. */
-
-#message {
+.receipt-footer {
   margin-top: 20px;
   text-align: center;
-  font-size: 13px;
-  min-height: 20px;
-  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
 }
+
+.receipt-actions { display: flex; flex-direction: column; }
