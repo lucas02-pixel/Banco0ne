@@ -56,6 +56,7 @@
         </div>
 
         <button id="gixBtn" class="btn-accent">Fazer um GIX →</button>
+        <button id="investBtn" class="btn-secondary-accent">📈 Investimentos</button>
         <button id="logoutBtn" class="btn-ghost">Sair com segurança</button>
       </div>
     </div>
@@ -130,6 +131,28 @@
         <button class="btn-accent" id="downloadImgBtn">Baixar como Imagem</button>
         <button class="btn-secondary-accent" id="downloadPdfBtn">Baixar como PDF</button>
         <button class="btn-ghost" id="newTransferBtn">Fazer outra transferência</button>
+      </div>
+    </div>
+
+    <!-- STEP: INVESTIMENTOS -->
+    <div class="step" id="step-invest">
+      <div class="glass-card invest-card">
+        <div class="card-label">// Renda Fixa Sulegal</div>
+        <div class="invest-taxa">1% ao dia • juros compostos • sem risco</div>
+
+        <div class="invest-display">
+          <div class="invest-display-label">Valor investido agora</div>
+          <div class="invest-valor" id="investValorAtual">0.00</div>
+          <div class="invest-unit">sulegais</div>
+        </div>
+
+        <div class="input-group">
+          <input type="number" id="investAmount" min="1" placeholder="Quanto investir" />
+        </div>
+        <div class="error-msg" id="investError"></div>
+        <button class="btn-accent" id="investarBtn">Investir →</button>
+        <button class="btn-secondary-accent" id="resgatarBtn">Resgatar tudo</button>
+        <button class="btn-ghost" id="backFromInvestBtn">Voltar</button>
       </div>
     </div>
 
