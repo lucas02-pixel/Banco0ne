@@ -55,6 +55,13 @@ const downloadImgBtn = document.getElementById('downloadImgBtn');
 const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 const newTransferBtn = document.getElementById('newTransferBtn');
 
+const investBtn = document.getElementById('investBtn');
+const backFromInvestBtn = document.getElementById('backFromInvestBtn');
+const investAmountInput = document.getElementById('investAmount');
+const investarBtn = document.getElementById('investarBtn');
+const resgatarBtn = document.getElementById('resgatarBtn');
+const investValorAtualSpan = document.getElementById('investValorAtual');
+
 // ============================================================
 // ESTADO
 // ============================================================
@@ -70,6 +77,12 @@ let recipientDocId = '';
 let recipientNome = '';
 let recipientGix = '';
 let transferAmount = 0;
+
+// ─── Investimentos (Renda Fixa Sulegal) ───
+const TAXA_DIARIA_INVEST = 0.01; // 1% ao dia, juros compostos — ajuste aqui se quiser mudar
+let investIntervalId = null;
+myData.investido = 0;          // principal "realizado" na última operação
+myData.investimentoDesde = null; // Date do último depósito/resgate/ajuste
 
 // ============================================================
 // HELPERS
@@ -295,6 +308,10 @@ function entrarNaConta(nome, data) {
   myNome = nome;
   myGixCode = data.gix;
   myData.saldo = formatarSaldo(data.saldo);
+  myData.investido = formatarSaldo(data.investido || 0);
+  myData.investimentoDesde = data.investimentoDesde
+    ? (data.investimentoDesde.toDate ? data.investimentoDesde.toDate() : new Date(data.investimentoDesde))
+    : null;
 
   userNomeSpan.textContent = nome;
   userSaldoSpan.textContent = myData.saldo;
@@ -312,6 +329,10 @@ function escutarSaldoEmTempoReal(nome) {
     const data = doc.data();
     myData.saldo = formatarSaldo(data.saldo);
     userSaldoSpan.textContent = myData.saldo;
+    myData.investido = formatarSaldo(data.investido || 0);
+    myData.investimentoDesde = data.investimentoDesde
+      ? (data.investimentoDesde.toDate ? data.investimentoDesde.toDate() : new Date(data.investimentoDesde))
+      : null;
   }, (error) => {
     console.error('Erro ao escutar saldo em tempo real:', error);
   });
@@ -319,6 +340,7 @@ function escutarSaldoEmTempoReal(nome) {
 
 logoutBtn.addEventListener('click', () => {
   if (unsubscribeSaldo) unsubscribeSaldo();
+  if (investIntervalId) clearInterval(investIntervalId);
   location.reload();
 });
 
@@ -515,5 +537,146 @@ downloadPdfBtn.addEventListener('click', async () => {
   } finally {
     downloadPdfBtn.disabled = false;
     downloadPdfBtn.textContent = 'Baixar como PDF';
+  }
+});
+
+// ============================================================
+// INVESTIMENTOS — Renda Fixa Sulegal (juros compostos, sem risco)
+// ============================================================
+// O valor investido não fica só um número parado: guardamos o
+// "principal" (myData.investido) e a data-base (myData.investimentoDesde).
+// O valor atual é sempre recalculado na hora, a partir do tempo
+// que passou desde essa data-base — por isso ele "cresce sozinho"
+// mesmo sem nenhuma escrita no banco a cada segundo.
+function calcularValorInvestidoAtual() {
+  const principal = myData.investido || 0;
+  if (principal <= 0 || !myData.investimentoDesde) return 0;
+
+  const diasDecorridos = (Date.now() - myData.investimentoDesde.getTime()) / 86400000;
+  return principal * Math.pow(1 + TAXA_DIARIA_INVEST, diasDecorridos);
+}
+
+function atualizarDisplayInvestimento() {
+  const atual = calcularValorInvestidoAtual();
+  investValorAtualSpan.textContent = atual.toFixed(2);
+}
+
+investBtn.addEventListener('click', () => {
+  investAmountInput.value = '';
+  hideError('investError');
+  atualizarDisplayInvestimento();
+  if (investIntervalId) clearInterval(investIntervalId);
+  investIntervalId = setInterval(atualizarDisplayInvestimento, 200); // atualiza 5x/seg pra parecer vivo
+  showStep('step-invest');
+});
+
+backFromInvestBtn.addEventListener('click', () => {
+  if (investIntervalId) { clearInterval(investIntervalId); investIntervalId = null; }
+  showStep('step-dashboard');
+});
+
+investarBtn.addEventListener('click', async () => {
+  const valor = parseFloat(investAmountInput.value);
+  hideError('investError');
+
+  if (!valor || valor <= 0) return showError('investError', 'Informe um valor válido');
+  if (valor > myData.saldo) return showError('investError', `Saldo insuficiente. Você tem ${myData.saldo} sulegais`);
+
+  investarBtn.disabled = true;
+  investarBtn.textContent = 'Investindo...';
+
+  try {
+    const ref = db.collection('Contas').doc(myDocId);
+
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const data = snap.data();
+
+      const saldoAtual = formatarSaldo(data.saldo);
+      if (saldoAtual < valor) throw new Error('Saldo insuficiente');
+
+      // Realiza o rendimento acumulado até agora antes de somar o novo aporte
+      const principalAnterior = formatarSaldo(data.investido || 0);
+      const desdeAnterior = data.investimentoDesde
+        ? (data.investimentoDesde.toDate ? data.investimentoDesde.toDate() : new Date(data.investimentoDesde))
+        : null;
+      const diasAnteriores = desdeAnterior ? (Date.now() - desdeAnterior.getTime()) / 86400000 : 0;
+      const valorRealizado = principalAnterior > 0
+        ? principalAnterior * Math.pow(1 + TAXA_DIARIA_INVEST, diasAnteriores)
+        : 0;
+
+      const novoInvestido = valorRealizado + valor;
+      const novaData = firebase.firestore.Timestamp.now();
+
+      t.update(ref, {
+        saldo: saldoAtual - valor,
+        investido: novoInvestido,
+        investimentoDesde: novaData
+      });
+
+      myData.saldo = saldoAtual - valor;
+      myData.investido = novoInvestido;
+      myData.investimentoDesde = novaData.toDate();
+    });
+
+    investAmountInput.value = '';
+    atualizarDisplayInvestimento();
+  } catch (error) {
+    console.error(error);
+    showError('investError', 'Falha ao investir. Tente novamente.');
+  } finally {
+    investarBtn.disabled = false;
+    investarBtn.textContent = 'Investir →';
+  }
+});
+
+resgatarBtn.addEventListener('click', async () => {
+  hideError('investError');
+
+  if (!myData.investido || myData.investido <= 0) {
+    showError('investError', 'Você não tem nada investido no momento.');
+    return;
+  }
+
+  resgatarBtn.disabled = true;
+  resgatarBtn.textContent = 'Resgatando...';
+
+  try {
+    const ref = db.collection('Contas').doc(myDocId);
+
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const data = snap.data();
+
+      const saldoAtual = formatarSaldo(data.saldo);
+      const principal = formatarSaldo(data.investido || 0);
+      const desde = data.investimentoDesde
+        ? (data.investimentoDesde.toDate ? data.investimentoDesde.toDate() : new Date(data.investimentoDesde))
+        : null;
+
+      if (principal <= 0 || !desde) throw new Error('Nada para resgatar');
+
+      const dias = (Date.now() - desde.getTime()) / 86400000;
+      const valorResgatado = principal * Math.pow(1 + TAXA_DIARIA_INVEST, dias);
+      const novoSaldo = saldoAtual + valorResgatado;
+
+      t.update(ref, {
+        saldo: novoSaldo,
+        investido: 0,
+        investimentoDesde: null
+      });
+
+      myData.saldo = novoSaldo;
+      myData.investido = 0;
+      myData.investimentoDesde = null;
+    });
+
+    atualizarDisplayInvestimento();
+  } catch (error) {
+    console.error(error);
+    showError('investError', 'Falha ao resgatar. Tente novamente.');
+  } finally {
+    resgatarBtn.disabled = false;
+    resgatarBtn.textContent = 'Resgatar tudo';
   }
 });
