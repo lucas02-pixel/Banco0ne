@@ -1,331 +1,519 @@
+// ============================================================
+// FIREBASE
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCXFhRZ_Byp40-sIxaNkyICoe066p6J04w",
+  authDomain: "banco-sulegal-e93c5.firebaseapp.com",
+  projectId: "banco-sulegal-e93c5",
+  storageBucket: "banco-sulegal-e93c5.firebasestorage.app",
+  messagingSenderId: "917084456664",
+  appId: "1:917084456664:web:0fa0ecae429aded7cbb9ad",
+  measurementId: "G-LTXPBFK5JV"
+};
 
-(function (global) {
-  const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCXFhRZ_Byp40-sIxaNkyICoe066p6J04w",
-    authDomain: "banco-sulegal-e93c5.firebaseapp.com",
-    projectId: "banco-sulegal-e93c5",
-    storageBucket: "banco-sulegal-e93c5.firebasestorage.app",
-    messagingSenderId: "917084456664",
-    appId: "1:917084456664:web:0fa0ecae429aded7cbb9ad",
-    measurementId: "G-LTXPBFK5JV"
-  };
+firebase.initializeApp(firebaseConfig);
 
-  const RECAPTCHA_SITE_KEY = '6LcmYU4tAAAAAOFwL2zGX9VDOLRSOd0bfdzGyGgI';
+const appCheck = firebase.appCheck();
+appCheck.activate(
+  '6LcmYU4tAAAAAOFwL2zGX9VDOLRSOd0bfdzGyGgI',
+  true
+);
 
-  let db = null;
-  let pronto = false;
-  let estado = null; // { valor, destino, produto }
-  let usuarioLogado = null; // { docId, nome, gix, saldo }
-  let transacaoId = '';
+const db = firebase.firestore();
 
-  // ─── Carregamento dinâmico de scripts externos ───
-  function carregarScript(src) {
-    return new Promise((resolve, reject) => {
-      if ([...document.scripts].some(s => s.src === src)) return resolve();
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Falha ao carregar ' + src));
-      document.head.appendChild(s);
-    });
+// ============================================================
+// ELEMENTOS
+// ============================================================
+const stepsDots = document.getElementById('stepsDots');
+const dots = document.querySelectorAll('.dot');
+
+const formTitle = document.getElementById('form-title');
+const inputNome = document.getElementById('input-nome');
+const inputSenha = document.getElementById('input-senha');
+const submitBtn = document.getElementById('submit-btn');
+const toggleModeBtn = document.getElementById('toggle-mode');
+
+const userNomeSpan = document.getElementById('user-nome');
+const userSaldoSpan = document.getElementById('user-saldo');
+const userGixSpan = document.getElementById('user-gix');
+
+const gixBtn = document.getElementById('gixBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+const toGixInput = document.getElementById('toGix');
+const findRecipientBtn = document.getElementById('findRecipientBtn');
+const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+
+const amountInput = document.getElementById('amount');
+const reviewBtn = document.getElementById('reviewBtn');
+const backToRecipientBtn = document.getElementById('backToRecipientBtn');
+
+const confirmBtn = document.getElementById('confirmBtn');
+const backToAmountBtn = document.getElementById('backToAmountBtn');
+
+const downloadImgBtn = document.getElementById('downloadImgBtn');
+const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+const newTransferBtn = document.getElementById('newTransferBtn');
+
+// ============================================================
+// ESTADO
+// ============================================================
+let isLoginMode = true;
+let unsubscribeSaldo = null;
+
+let myDocId = '';
+let myNome = '';
+let myGixCode = '';
+let myData = { saldo: 0 };
+
+let recipientDocId = '';
+let recipientNome = '';
+let recipientGix = '';
+let transferAmount = 0;
+
+// ============================================================
+// HELPERS
+// ============================================================
+function gerarGix() {
+  return 'SUL' + Math.floor(100000 + Math.random() * 900000);
+}
+
+function formatarSaldo(valor) {
+  const numero = Number(valor);
+  if (isNaN(numero)) {
+    console.warn('Saldo veio em formato inesperado do Firestore:', valor);
+    return 0;
+  }
+  return numero;
+}
+
+function comPrimeiraLetraMaiuscula(nome) {
+  if (!nome) return nome;
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
+// ============================================================
+// HASH DE SENHA — bcrypt (via bcryptjs), com migração automática
+// ============================================================
+// Reconhece 3 formatos possíveis salvos no banco:
+//   1) texto puro          (contas bem antigas)
+//   2) SHA-256              (migração anterior)
+//   3) bcrypt ($2a$/$2b$/$2y$...) — formato final, com salt aleatório
+//      de verdade e custo computacional de propósito.
+// Sempre que uma conta loga com um formato mais fraco, migramos
+// silenciosamente para bcrypt.
+
+function ehHashBcrypt(valor) {
+  return typeof valor === 'string' && /^\$2[aby]\$\d{2}\$/.test(valor);
+}
+
+function pareceHash(valor) {
+  return typeof valor === 'string' && /^[a-f0-9]{64}$/i.test(valor);
+}
+
+async function gerarHashSenha(nome, senha) {
+  // SHA-256 antigo — mantido só pra conseguir verificar contas
+  // que já migraram pra esse formato antes do bcrypt existir.
+  const textoComSal = nome.toLowerCase() + ':' + senha;
+  const encoder = new TextEncoder();
+  const dados = encoder.encode(textoComSal);
+  const bufferHash = await crypto.subtle.digest('SHA-256', dados);
+  return Array.from(new Uint8Array(bufferHash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function gerarHashBcrypt(senha) {
+  return dcodeIO.bcrypt.hashSync(senha, 10); // 10 = custo (rounds)
+}
+
+function verificarBcrypt(senha, hashSalvo) {
+  return dcodeIO.bcrypt.compareSync(senha, hashSalvo);
+}
+
+// Verifica a senha digitada contra o que está salvo, e migra
+// automaticamente para bcrypt se ainda não estiver nesse formato.
+// Retorna true/false.
+async function verificarEMigrarSenha(nome, senhaDigitada, senhaSalva, docRef) {
+  if (ehHashBcrypt(senhaSalva)) {
+    return verificarBcrypt(senhaDigitada, senhaSalva);
   }
 
-  async function garantirDependencias() {
-    if (pronto) return;
-
-    await carregarScript('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js');
-    await carregarScript('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-check-compat.js');
-    await carregarScript('https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js');
-    await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js');
-    await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-    await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-
-    if (!firebase.apps || !firebase.apps.length) {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      const appCheck = firebase.appCheck();
-      appCheck.activate(RECAPTCHA_SITE_KEY, true);
-    }
-
-    db = firebase.firestore();
-    pronto = true;
-  }
-
-  // ─── Hash de senha — bcrypt, com migração automática (mesma lógica dos outros sites) ───
-  function ehHashBcrypt(valor) {
-    return typeof valor === 'string' && /^\$2[aby]\$\d{2}\$/.test(valor);
-  }
-
-  function pareceHash(valor) {
-    return typeof valor === 'string' && /^[a-f0-9]{64}$/i.test(valor);
-  }
-
-  async function gerarHashSha256(nome, senha) {
-    const textoComSal = nome.toLowerCase() + ':' + senha;
-    const dados = new TextEncoder().encode(textoComSal);
-    const bufferHash = await crypto.subtle.digest('SHA-256', dados);
-    return Array.from(new Uint8Array(bufferHash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-
-  function gerarHashBcrypt(senha) {
-    return dcodeIO.bcrypt.hashSync(senha, 10);
-  }
-
-  function verificarBcrypt(senha, hashSalvo) {
-    return dcodeIO.bcrypt.compareSync(senha, hashSalvo);
-  }
-
-  async function verificarEMigrarSenha(nome, senhaDigitada, senhaSalva, docId) {
-    if (ehHashBcrypt(senhaSalva)) {
-      return verificarBcrypt(senhaDigitada, senhaSalva);
-    }
-    if (pareceHash(senhaSalva)) {
-      const hashCalc = await gerarHashSha256(nome, senhaDigitada);
-      if (hashCalc !== senhaSalva) return false;
-      const novoBcrypt = gerarHashBcrypt(senhaDigitada);
-      db.collection('Contas').doc(docId).update({ senha: novoBcrypt }).catch(() => {});
-      return true;
-    }
-    if (senhaSalva !== senhaDigitada) return false;
+  if (pareceHash(senhaSalva)) {
+    const hashCalc = await gerarHashSenha(nome, senhaDigitada);
+    if (hashCalc !== senhaSalva) return false;
     const novoBcrypt = gerarHashBcrypt(senhaDigitada);
-    db.collection('Contas').doc(docId).update({ senha: novoBcrypt }).catch(() => {});
+    docRef.update({ senha: novoBcrypt }).catch(err =>
+      console.warn('Não foi possível migrar sha256 → bcrypt:', err)
+    );
     return true;
   }
 
-  async function buscarPorGix(gix) {
-    const snap = await db.collection('Contas').where('gix', '==', gix).limit(1).get();
-    if (snap.empty) return null;
-    const d = snap.docs[0];
-    return { id: d.id, data: d.data() };
-  }
+  // Texto puro
+  if (senhaSalva !== senhaDigitada) return false;
+  const novoBcrypt = gerarHashBcrypt(senhaDigitada);
+  docRef.update({ senha: novoBcrypt }).catch(err =>
+    console.warn('Não foi possível migrar texto puro → bcrypt:', err)
+  );
+  return true;
+}
 
-  // ─── Construção do modal (uma vez só) ───
-  function montarModal() {
-    if (document.getElementById('gixpay-overlay')) return;
+function showStep(id, dotIndex = null) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 
-    const overlay = document.createElement('div');
-    overlay.id = 'gixpay-overlay';
-    overlay.innerHTML = `
-      <div class="gixpay-modal">
-        <button class="gixpay-close" id="gixpay-close" aria-label="Fechar">×</button>
-
-        <div class="gixpay-logo">GIX PAY</div>
-
-        <div class="gixpay-step active" id="gixpay-step-login">
-          <div class="gixpay-produto-box">
-            <div class="gixpay-produto-nome" id="gixpay-produto-nome">—</div>
-            <div class="gixpay-produto-valor"><span id="gixpay-produto-valor">0</span> sulegais</div>
-          </div>
-          <div class="gixpay-input-group">
-            <input id="gixpay-gix-input" type="text" placeholder="Seu código GIX (ex: SUL123456)" />
-          </div>
-          <div class="gixpay-input-group">
-            <input id="gixpay-senha-input" type="password" placeholder="Sua senha" />
-          </div>
-          <div class="gixpay-error" id="gixpay-login-error"></div>
-          <button class="gixpay-btn-accent" id="gixpay-login-btn">Entrar →</button>
-        </div>
-
-        <div class="gixpay-step" id="gixpay-step-confirm">
-          <div class="gixpay-user-box">
-            <div class="gixpay-avatar" id="gixpay-avatar">?</div>
-            <div>
-              <div class="gixpay-user-nome" id="gixpay-user-nome">—</div>
-              <div class="gixpay-user-saldo" id="gixpay-user-saldo">— sulegais</div>
-            </div>
-          </div>
-          <div class="gixpay-confirm-row"><span>Produto</span><span id="gixpay-conf-produto">—</span></div>
-          <div class="gixpay-confirm-row"><span>Destino (GIX)</span><span id="gixpay-conf-destino">—</span></div>
-          <div class="gixpay-confirm-row gixpay-highlight"><span>Total</span><span id="gixpay-conf-valor">—</span></div>
-          <div class="gixpay-error" id="gixpay-confirm-error"></div>
-          <button class="gixpay-btn-accent" id="gixpay-confirm-btn">✓ Confirmar pagamento</button>
-          <button class="gixpay-btn-ghost" id="gixpay-back-btn">← Trocar conta</button>
-        </div>
-
-        <div class="gixpay-step" id="gixpay-step-success">
-          <div class="gixpay-success-icon">✅</div>
-          <div class="gixpay-success-title">Pagamento confirmado!</div>
-          <div class="gixpay-success-msg" id="gixpay-success-msg">—</div>
-          <div class="gixpay-receipt-actions">
-            <button class="gixpay-btn-secondary" id="gixpay-download-img">Baixar comprovante (imagem)</button>
-            <button class="gixpay-btn-ghost" id="gixpay-finish-btn">Fechar</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    document.getElementById('gixpay-close').addEventListener('click', fecharModal);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) fecharModal(); });
-
-    document.getElementById('gixpay-login-btn').addEventListener('click', fazerLogin);
-    document.getElementById('gixpay-confirm-btn').addEventListener('click', confirmarPagamento);
-    document.getElementById('gixpay-back-btn').addEventListener('click', () => mostrarPasso('login'));
-    document.getElementById('gixpay-finish-btn').addEventListener('click', fecharModal);
-    document.getElementById('gixpay-download-img').addEventListener('click', baixarComprovante);
-
-    document.getElementById('gixpay-senha-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') fazerLogin();
+  const transferSteps = ['step-recipient', 'step-amount', 'step-confirm', 'step-receipt'];
+  if (transferSteps.includes(id)) {
+    stepsDots.classList.add('visible');
+    dots.forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (dotIndex !== null) {
+        if (i < dotIndex) d.classList.add('done');
+        if (i === dotIndex) d.classList.add('active');
+      }
     });
+  } else {
+    stepsDots.classList.remove('visible');
+  }
+}
+
+function showError(id, msg) {
+  const e = document.getElementById(id);
+  e.textContent = msg;
+  e.classList.add('show');
+}
+function hideError(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function resetLoginBtn() {
+  submitBtn.disabled = false;
+  submitBtn.textContent = isLoginMode ? "Acessar Conta" : "Finalizar Cadastro";
+}
+
+// ============================================================
+// LOGIN / CADASTRO
+// ============================================================
+toggleModeBtn.addEventListener('click', () => {
+  isLoginMode = !isLoginMode;
+  hideError('loginError');
+  if (isLoginMode) {
+    formTitle.textContent = 'Entrar';
+    submitBtn.textContent = 'Acessar Conta';
+    toggleModeBtn.textContent = 'Ainda não tenho conta';
+  } else {
+    formTitle.textContent = 'Criar conta';
+    submitBtn.textContent = 'Finalizar Cadastro';
+    toggleModeBtn.textContent = 'Já sou cliente';
+  }
+  inputNome.value = '';
+  inputSenha.value = '';
+});
+
+submitBtn.addEventListener('click', async () => {
+  const nome = inputNome.value.trim();
+  const senha = inputSenha.value.trim();
+  hideError('loginError');
+
+  if (!nome || !senha) {
+    showError('loginError', 'Preencha os campos obrigatórios.');
+    return;
   }
 
-  function mostrarPasso(id) {
-    document.querySelectorAll('#gixpay-overlay .gixpay-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('gixpay-step-' + id).classList.add('active');
-  }
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Processando...";
 
-  function mostrarErro(id, msg) {
-    const el = document.getElementById(id);
-    el.textContent = msg;
-    el.classList.add('show');
-  }
-  function ocultarErro(id) {
-    document.getElementById(id).classList.remove('show');
-  }
-
-  function fecharModal() {
-    document.getElementById('gixpay-overlay').classList.remove('open');
-  }
-
-  // ─── Login ───
-  async function fazerLogin() {
-    const gix = document.getElementById('gixpay-gix-input').value.trim().toUpperCase();
-    const senha = document.getElementById('gixpay-senha-input').value.trim();
-    ocultarErro('gixpay-login-error');
-
-    if (!gix) return mostrarErro('gixpay-login-error', 'Informe seu GIX');
-    if (!senha) return mostrarErro('gixpay-login-error', 'Informe sua senha');
-
-    const btn = document.getElementById('gixpay-login-btn');
-    btn.disabled = true;
-    btn.textContent = 'Verificando...';
-
+  if (isLoginMode) {
     try {
-      const result = await buscarPorGix(gix);
-      if (!result) { mostrarErro('gixpay-login-error', 'Conta não encontrada'); return; }
+      let nomeFinal = nome;
+      let docRef = db.collection('Contas').doc(nomeFinal);
+      let doc = await docRef.get();
 
-      const nomeConta = result.id;
+      if (!doc.exists) {
+        const nomeAlternativo = comPrimeiraLetraMaiuscula(nome);
+        if (nomeAlternativo !== nome) {
+          const docRefAlt = db.collection('Contas').doc(nomeAlternativo);
+          const docAlt = await docRefAlt.get();
+          if (docAlt.exists) {
+            nomeFinal = nomeAlternativo;
+            docRef = docRefAlt;
+            doc = docAlt;
+          }
+        }
+      }
 
-      const senhaOk = await verificarEMigrarSenha(nomeConta, senha, result.data.senha, result.id);
+      if (!doc.exists) {
+        showError('loginError', 'Usuário não localizado. Verifique o nome digitado.');
+        resetLoginBtn();
+        return;
+      }
+
+      const data = doc.data();
+
+      const senhaOk = await verificarEMigrarSenha(nomeFinal, senha, data.senha, docRef);
       if (!senhaOk) {
-        mostrarErro('gixpay-login-error', 'Senha incorreta');
+        showError('loginError', 'Credenciais incorretas.');
+        resetLoginBtn();
         return;
       }
 
-      if (gix === estado.destino) {
-        mostrarErro('gixpay-login-error', 'Você não pode pagar para si mesmo');
-        return;
-      }
+      entrarNaConta(nomeFinal, data);
 
-      usuarioLogado = { docId: result.id, nome: result.id, gix, saldo: Number(result.data.saldo) || 0 };
-
-      document.getElementById('gixpay-avatar').textContent = usuarioLogado.nome[0].toUpperCase();
-      document.getElementById('gixpay-user-nome').textContent = usuarioLogado.nome;
-      document.getElementById('gixpay-user-saldo').textContent = usuarioLogado.saldo + ' sulegais';
-      document.getElementById('gixpay-conf-produto').textContent = estado.produto;
-      document.getElementById('gixpay-conf-destino').textContent = estado.destino;
-      document.getElementById('gixpay-conf-valor').textContent = estado.valor + ' sulegais';
-
-      const semSaldo = usuarioLogado.saldo < estado.valor;
-      ocultarErro('gixpay-confirm-error');
-      if (semSaldo) mostrarErro('gixpay-confirm-error', 'Saldo insuficiente para este pagamento.');
-      document.getElementById('gixpay-confirm-btn').disabled = semSaldo;
-
-      mostrarPasso('confirm');
-    } catch (e) {
-      console.error(e);
-      mostrarErro('gixpay-login-error', 'Erro de conexão. Tente novamente.');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Entrar →';
+    } catch (error) {
+      console.error("Erro ao autenticar:", error);
+      showError('loginError', 'Erro de conexão com o servidor.');
+      resetLoginBtn();
     }
-  }
-
-  // ─── Confirmar pagamento ───
-  async function confirmarPagamento() {
-    const btn = document.getElementById('gixpay-confirm-btn');
-    btn.disabled = true;
-    btn.textContent = 'Processando...';
-    ocultarErro('gixpay-confirm-error');
-
+  } else {
     try {
-      const destinoResult = await buscarPorGix(estado.destino);
-      if (!destinoResult) throw new Error('Conta de destino não encontrada');
+      const docRef = db.collection('Contas').doc(nome);
+      const doc = await docRef.get();
 
-      const sRef = db.collection('Contas').doc(usuarioLogado.docId);
-      const rRef = db.collection('Contas').doc(destinoResult.id);
+      if (doc.exists) {
+        showError('loginError', 'Este nome já está em uso.');
+        resetLoginBtn();
+        return;
+      }
 
-      await db.runTransaction(async (t) => {
-        const sSnap = await t.get(sRef);
-        const rSnap = await t.get(rRef);
-        if (!sSnap.exists || !rSnap.exists) throw new Error('Conta não encontrada');
+      const gix = gerarGix();
+      const hashSenha = gerarHashBcrypt(senha);
+      const novaConta = { senha: hashSenha, saldo: 0, gix: gix };
+      await docRef.set(novaConta);
 
-        const saldoAtual = Number(sSnap.data().saldo) || 0;
-        if (saldoAtual < estado.valor) throw new Error('Saldo insuficiente');
+      entrarNaConta(nome, novaConta);
 
-        t.update(sRef, { saldo: saldoAtual - estado.valor });
-        t.update(rRef, { saldo: (Number(rSnap.data().saldo) || 0) + estado.valor });
-      });
-
-      await db.collection('avisos').add({
-        gix: usuarioLogado.gix,
-        nome: usuarioLogado.nome,
-        produto: estado.produto,
-        destino: estado.destino,
-        total: estado.valor,
-        origem: location.hostname,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      transacaoId = 'GX' + Date.now().toString().slice(-9);
-      document.getElementById('gixpay-success-msg').innerHTML =
-        `<b>${usuarioLogado.nome}</b> pagou <b>${estado.valor} sulegais</b> por "${estado.produto}".<br/><small>ID: ${transacaoId}</small>`;
-
-      mostrarPasso('success');
-    } catch (e) {
-      console.error(e);
-      const msg = e.message === 'Saldo insuficiente'
-        ? 'Saldo insuficiente para este pagamento.'
-        : 'Falha no pagamento. Tente novamente.';
-      mostrarErro('gixpay-confirm-error', msg);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '✓ Confirmar pagamento';
+    } catch (error) {
+      console.error("Erro ao criar conta:", error);
+      showError('loginError', 'Erro ao criar conta no servidor.');
+      resetLoginBtn();
     }
   }
+});
 
-  async function baixarComprovante() {
-    const el = document.querySelector('#gixpay-step-success');
-    const canvas = await html2canvas(el, { backgroundColor: '#0b0f1a', scale: 2 });
+function entrarNaConta(nome, data) {
+  myDocId = nome;
+  myNome = nome;
+  myGixCode = data.gix;
+  myData.saldo = formatarSaldo(data.saldo);
+
+  userNomeSpan.textContent = nome;
+  userSaldoSpan.textContent = myData.saldo;
+  userGixSpan.textContent = data.gix;
+
+  escutarSaldoEmTempoReal(nome);
+  showStep('step-dashboard');
+}
+
+function escutarSaldoEmTempoReal(nome) {
+  if (unsubscribeSaldo) unsubscribeSaldo();
+
+  unsubscribeSaldo = db.collection('Contas').doc(nome).onSnapshot((doc) => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    myData.saldo = formatarSaldo(data.saldo);
+    userSaldoSpan.textContent = myData.saldo;
+  }, (error) => {
+    console.error('Erro ao escutar saldo em tempo real:', error);
+  });
+}
+
+logoutBtn.addEventListener('click', () => {
+  if (unsubscribeSaldo) unsubscribeSaldo();
+  location.reload();
+});
+
+// ============================================================
+// FLUXO DE TRANSFERÊNCIA (GIX)
+// ============================================================
+gixBtn.addEventListener('click', () => {
+  toGixInput.value = '';
+  hideError('recipientError');
+  showStep('step-recipient', 0);
+});
+
+backToDashboardBtn.addEventListener('click', () => showStep('step-dashboard'));
+backToRecipientBtn.addEventListener('click', () => showStep('step-recipient', 0));
+backToAmountBtn.addEventListener('click', () => showStep('step-amount', 1));
+
+findRecipientBtn.addEventListener('click', async () => {
+  const gix = toGixInput.value.trim().toUpperCase();
+  hideError('recipientError');
+
+  if (!gix) {
+    showError('recipientError', 'Informe o GIX do destinatário');
+    return;
+  }
+  if (gix === myGixCode) {
+    showError('recipientError', 'Você não pode transferir para si mesmo');
+    return;
+  }
+
+  findRecipientBtn.disabled = true;
+  findRecipientBtn.textContent = 'Buscando...';
+
+  try {
+    const snap = await db.collection('Contas').where('gix', '==', gix).limit(1).get();
+
+    if (snap.empty) {
+      showError('recipientError', 'Destinatário não encontrado');
+      return;
+    }
+
+    const docSnap = snap.docs[0];
+    recipientDocId = docSnap.id;
+    recipientNome = docSnap.id;
+    recipientGix = gix;
+
+    document.getElementById('recipientName').textContent = recipientNome;
+    document.getElementById('recipientGixDisplay').textContent = 'GIX: ' + gix;
+    document.getElementById('recipientAvatar').textContent = recipientNome[0].toUpperCase();
+    amountInput.value = '';
+    hideError('amountError');
+
+    showStep('step-amount', 1);
+  } catch (error) {
+    console.error(error);
+    showError('recipientError', 'Erro na busca. Tente novamente.');
+  } finally {
+    findRecipientBtn.disabled = false;
+    findRecipientBtn.textContent = 'Buscar conta →';
+  }
+});
+
+reviewBtn.addEventListener('click', () => {
+  const val = parseInt(amountInput.value);
+  hideError('amountError');
+
+  if (!val || val <= 0) {
+    showError('amountError', 'Informe um valor válido');
+    return;
+  }
+  if (val > myData.saldo) {
+    showError('amountError', `Saldo insuficiente. Você tem ${myData.saldo} sulegais`);
+    return;
+  }
+
+  transferAmount = val;
+  document.getElementById('confirmTo').textContent = recipientNome;
+  document.getElementById('confirmGix').textContent = recipientGix;
+  document.getElementById('confirmAmount').textContent = val + ' sulegais';
+  document.getElementById('confirmAfter').textContent = (myData.saldo - val) + ' sulegais';
+
+  hideError('transferError');
+  showStep('step-confirm', 2);
+});
+
+confirmBtn.addEventListener('click', async () => {
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Enviando...';
+  hideError('transferError');
+
+  try {
+    const sRef = db.collection('Contas').doc(myDocId);
+    const rRef = db.collection('Contas').doc(recipientDocId);
+
+    await db.runTransaction(async (t) => {
+      const sSnap = await t.get(sRef);
+      const rSnap = await t.get(rRef);
+
+      if (!sSnap.exists || !rSnap.exists) throw new Error('Conta não encontrada');
+
+      const currentSaldo = formatarSaldo(sSnap.data().saldo);
+      if (currentSaldo < transferAmount) throw new Error('Saldo insuficiente');
+
+      const newS = currentSaldo - transferAmount;
+      const newR = formatarSaldo(rSnap.data().saldo) + transferAmount;
+
+      t.update(sRef, { saldo: newS });
+      t.update(rRef, { saldo: newR });
+
+      myData.saldo = newS;
+    });
+
+    montarComprovante();
+    showStep('step-receipt', 3);
+
+  } catch (error) {
+    console.error(error);
+    const msg = error.message === 'Saldo insuficiente'
+      ? 'Saldo insuficiente para esta transação'
+      : 'Falha na transação. Tente novamente.';
+    showError('transferError', msg);
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✓ Confirmar e enviar';
+  }
+});
+
+// ============================================================
+// COMPROVANTE
+// ============================================================
+function montarComprovante() {
+  const agora = new Date();
+  const dataFormatada = agora.toLocaleDateString('pt-BR') + ' às ' +
+    agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const transacaoId = 'TX' + agora.getTime().toString().slice(-9);
+
+  document.getElementById('receiptDate').textContent = dataFormatada;
+  document.getElementById('receiptFrom').textContent = myNome;
+  document.getElementById('receiptTo').textContent = recipientNome;
+  document.getElementById('receiptGix').textContent = recipientGix;
+  document.getElementById('receiptAmount').textContent = transferAmount + ' sulegais';
+  document.getElementById('receiptId').textContent = transacaoId;
+}
+
+newTransferBtn.addEventListener('click', () => {
+  toGixInput.value = '';
+  amountInput.value = '';
+  showStep('step-dashboard');
+});
+
+downloadImgBtn.addEventListener('click', async () => {
+  downloadImgBtn.disabled = true;
+  downloadImgBtn.textContent = 'Gerando imagem...';
+  try {
+    const canvas = await html2canvas(document.getElementById('receiptCard'), {
+      backgroundColor: '#0b0f1a',
+      scale: 2
+    });
     const link = document.createElement('a');
-    link.download = `comprovante-${transacaoId}.png`;
+    link.download = `comprovante-${document.getElementById('receiptId').textContent}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+  } catch (error) {
+    console.error('Erro ao gerar imagem:', error);
+  } finally {
+    downloadImgBtn.disabled = false;
+    downloadImgBtn.textContent = 'Baixar como Imagem';
   }
+});
 
-  // ─── API pública ───
-  async function abrir(opts) {
-    const { valor, destino, produto } = opts || {};
+downloadPdfBtn.addEventListener('click', async () => {
+  downloadPdfBtn.disabled = true;
+  downloadPdfBtn.textContent = 'Gerando PDF...';
+  try {
+    const canvas = await html2canvas(document.getElementById('receiptCard'), {
+      backgroundColor: '#0b0f1a',
+      scale: 2
+    });
+    const imgData = canvas.toDataURL('image/png');
 
-    if (!valor || valor <= 0) { console.error('GixPay: "valor" inválido'); return; }
-    if (!destino) { console.error('GixPay: "destino" (GIX) é obrigatório'); return; }
+    const { jsPDF } = window.jspdf;
+    const imgWidthMM = 100;
+    const imgHeightMM = (canvas.height * imgWidthMM) / canvas.width;
 
-    await garantirDependencias();
-    montarModal();
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [imgWidthMM + 20, imgHeightMM + 20]
+    });
 
-    estado = { valor: Number(valor), destino: String(destino).toUpperCase(), produto: produto || 'Compra' };
-    usuarioLogado = null;
-
-    document.getElementById('gixpay-gix-input').value = '';
-    document.getElementById('gixpay-senha-input').value = '';
-    ocultarErro('gixpay-login-error');
-    document.getElementById('gixpay-produto-nome').textContent = estado.produto;
-    document.getElementById('gixpay-produto-valor').textContent = estado.valor;
-
-    mostrarPasso('login');
-    document.getElementById('gixpay-overlay').classList.add('open');
+    pdf.addImage(imgData, 'PNG', 10, 10, imgWidthMM, imgHeightMM);
+    pdf.save(`comprovante-${document.getElementById('receiptId').textContent}.pdf`);
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
+  } finally {
+    downloadPdfBtn.disabled = false;
+    downloadPdfBtn.textContent = 'Baixar como PDF';
   }
-
-  global.GixPay = { open: abrir };
-})(window);
+});
